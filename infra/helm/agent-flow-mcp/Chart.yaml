@@ -1,0 +1,12 @@
+apiVersion: v2
+name: agent-flow-mcp
+description: Helm chart for mcp-afa-audit-store (custom MCP) with workload identity
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+keywords:
+  - mcp
+  - azure
+  - workload-identity
+maintainers:
+  - name: platform-engineering

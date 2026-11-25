@@ -1,0 +1,19 @@
+{
+  "managedApiConnections": {},
+  "serviceProviderConnections": {
+    "azureCosmosDB": {
+      "displayName": "Cosmos via Managed Identity",
+      "parameterValues": {
+        "connectionString": "@appsetting('COSMOS_ENDPOINT')"
+      },
+      "serviceProvider": {
+        "id": "/serviceProviders/azureCosmosDB"
+      }
+    }
+  },
+  "functionConnections": {},
+  "authentication": {
+    "type": "ManagedServiceIdentity",
+    "identity": "@appsetting('AZURE_CLIENT_ID')"
+  }
+}

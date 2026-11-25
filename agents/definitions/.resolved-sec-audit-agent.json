@@ -1,0 +1,51 @@
+{
+  "kind": "prompt",
+  "name": "sec-audit-agent",
+  "display_name": "Security Audit Agent",
+  "description": "Scans configs/code for secrets, IAM flaws, and CVEs.",
+  "host": "azure.ai.agent",
+  "harness": {
+    "type": "microsoft_copilot_preview"
+  },
+  "model": {
+    "deployment": "gpt-5-mini"
+  },
+  "instructions": "You are the sec-audit-agent. Follow owasp-security-audit SKILL.md.\nDiscover cve-lookup and Microsoft Learn MCP via registry. Route all calls through the AI Gateway.\nRecommend Managed Identity / workload identity over static secrets.\n",
+  "skills": [
+    {
+      "name": "owasp-security-audit",
+      "version": "1.0.0"
+    }
+  ],
+  "tools": [
+    {
+      "type": "toolbox",
+      "name": "afa-shared-toolbox",
+      "discovery": "tool_search"
+    },
+    {
+      "type": "openapi",
+      "name": "cve-lookup",
+      "resolve_from": "api_center"
+    },
+    {
+      "type": "mcp",
+      "name": "microsoft-learn",
+      "resolve_from": "api_center",
+      "gateway_required": true
+    }
+  ],
+  "guardrails": {
+    "content_safety": true,
+    "prompt_shields": true
+  },
+  "rbac": {
+    "allowed_roles": [
+      "Agent.Admin",
+      "Agent.SecurityAuditor"
+    ]
+  },
+  "metadata": {
+    "project": "agent-flow-azure"
+  }
+}

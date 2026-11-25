@@ -1,0 +1,113 @@
+{
+  "foundry_project_endpoint": "https://afa-dev-foundry-eus2-01.services.ai.azure.com/api/projects/afa-agents",
+  "model_deployment": "gpt-4.1-mini",
+  "toolbox": "afa-shared-toolbox",
+  "skills": [
+    {
+      "name": "intent-classifier",
+      "blob": "https://afadevsteus201.blob.core.windows.net/skills/intent-classifier/SKILL.md",
+      "foundry_version": "6"
+    },
+    {
+      "name": "azure-finops-advisor",
+      "blob": "https://afadevsteus201.blob.core.windows.net/skills/azure-finops-advisor/SKILL.md",
+      "foundry_version": "6"
+    },
+    {
+      "name": "owasp-security-audit",
+      "blob": "https://afadevsteus201.blob.core.windows.net/skills/owasp-security-audit/SKILL.md",
+      "foundry_version": "6"
+    },
+    {
+      "name": "research-brief",
+      "blob": "https://afadevsteus201.blob.core.windows.net/skills/research-brief/SKILL.md",
+      "foundry_version": "6"
+    },
+    {
+      "name": "github-issue-creator",
+      "blob": "https://afadevsteus201.blob.core.windows.net/skills/github-issue-creator/SKILL.md",
+      "foundry_version": "6"
+    }
+  ],
+  "tools": [
+    {
+      "name": "fn-afa-validate-request",
+      "path": "/api/validate-request",
+      "description": "Validate inbound agent/flow requests",
+      "roles": [
+        "*"
+      ],
+      "endpoint": "https://afa-dev-apim-eus2-01.azure-api.net/api/validate-request",
+      "auth": "apim_jwt_or_function_host"
+    },
+    {
+      "name": "fn-afa-cve-lookup",
+      "path": "/api/cve-lookup",
+      "description": "Look up package CVEs via OSV/NVD",
+      "roles": [
+        "Agent.Admin",
+        "Agent.SecurityAuditor"
+      ],
+      "endpoint": "https://afa-dev-apim-eus2-01.azure-api.net/api/cve-lookup",
+      "auth": "apim_jwt_or_function_host"
+    },
+    {
+      "name": "fn-afa-cost-estimator",
+      "path": "/api/cost-estimator",
+      "description": "Estimate Azure consumption costs",
+      "roles": [
+        "Agent.Admin"
+      ],
+      "endpoint": "https://afa-dev-apim-eus2-01.azure-api.net/api/cost-estimator",
+      "auth": "apim_jwt_or_function_host"
+    },
+    {
+      "name": "fn-afa-repo-metrics",
+      "path": "/api/repo-metrics",
+      "description": "Repository PR/issue metrics",
+      "roles": [
+        "Agent.Admin",
+        "Agent.Developer"
+      ],
+      "endpoint": "https://afa-dev-apim-eus2-01.azure-api.net/api/repo-metrics",
+      "auth": "apim_jwt_or_function_host"
+    }
+  ],
+  "mcps": [
+    {
+      "name": "github",
+      "displayName": "GitHub Official MCP (Foundry catalog)",
+      "url": "https://api.githubcopilot.com/mcp/",
+      "project_connection": "/subscriptions/a59f2b83-4baf-4856-9826-7030edb56d28/resourceGroups/rg-agent-flow-azure-dev/providers/Microsoft.CognitiveServices/accounts/afa-dev-foundry-eus2-01/projects/afa-agents/connections/github-mcp",
+      "via_foundry_connection": true
+    },
+    {
+      "name": "microsoft-learn",
+      "displayName": "Microsoft Learn Docs MCP",
+      "url": "https://learn.microsoft.com/api/mcp",
+      "project_connection": "/subscriptions/a59f2b83-4baf-4856-9826-7030edb56d28/resourceGroups/rg-agent-flow-azure-dev/providers/Microsoft.CognitiveServices/accounts/afa-dev-foundry-eus2-01/projects/afa-agents/connections/microsoft-learn-mcp",
+      "via_foundry_connection": true
+    },
+    {
+      "name": "servicenow",
+      "displayName": "ServiceNow OSS MCP (Azure-hosted)",
+      "url": "https://afa-dev-snmcp-eus2-01.icymoss-2f653107.eastus2.azurecontainerapps.io/mcp",
+      "project_connection": "/subscriptions/a59f2b83-4baf-4856-9826-7030edb56d28/resourceGroups/rg-agent-flow-azure-dev/providers/Microsoft.CognitiveServices/accounts/afa-dev-foundry-eus2-01/projects/afa-agents/connections/servicenow-mcp",
+      "via_foundry_connection": true,
+      "optional": true
+    },
+    {
+      "name": "mcp-afa-audit-store",
+      "displayName": "Audit Store MCP",
+      "url": "https://afa-dev-func-eus2-01.azurewebsites.net",
+      "via_foundry_connection": false
+    }
+  ],
+  "memory_store": "afa-agent-memory",
+  "auth": "workload_identity",
+  "connections": {
+    "github": "/subscriptions/a59f2b83-4baf-4856-9826-7030edb56d28/resourceGroups/rg-agent-flow-azure-dev/providers/Microsoft.CognitiveServices/accounts/afa-dev-foundry-eus2-01/projects/afa-agents/connections/github-mcp",
+    "microsoft-learn": "/subscriptions/a59f2b83-4baf-4856-9826-7030edb56d28/resourceGroups/rg-agent-flow-azure-dev/providers/Microsoft.CognitiveServices/accounts/afa-dev-foundry-eus2-01/projects/afa-agents/connections/microsoft-learn-mcp",
+    "servicenow": "/subscriptions/a59f2b83-4baf-4856-9826-7030edb56d28/resourceGroups/rg-agent-flow-azure-dev/providers/Microsoft.CognitiveServices/accounts/afa-dev-foundry-eus2-01/projects/afa-agents/connections/servicenow-mcp"
+  }
+}

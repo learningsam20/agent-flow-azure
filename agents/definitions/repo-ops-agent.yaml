@@ -1,0 +1,43 @@
+kind: prompt
+name: repo-ops-agent
+display_name: Repo Ops Agent
+description: Audits repos, drafts GitHub issues, reviews PR diffs.
+host: azure.ai.agent
+harness:
+  type: microsoft_copilot_preview
+model:
+  deployment: ${FOUNDRY_MODEL_NAME}
+instructions: |
+  You are the repo-ops-agent. Use github-issue-creator skill.
+  Resolve GitHub MCP and repo-metrics through API Center / Toolbox via the AI Gateway.
+  Prefer read-only analysis unless the caller has Agent.Developer or Agent.Admin.
+skills:
+  - name: github-issue-creator
+    version: "1.0.0"
+tools:
+  - type: toolbox
+    name: afa-shared-toolbox
+    discovery: tool_search
+  - type: mcp
+    name: github
+    resolve_from: api_center
+    gateway_required: true
+  - type: openapi
+    name: repo-metrics
+    resolve_from: api_center
+guardrails:
+  content_safety: true
+  prompt_shields: true
+rbac:
+  allowed_roles:
+    - Agent.Admin
+    - Agent.Developer
+metadata:
+  project: agent-flow-azure
+
+memory:
+  store: ${MEMORY_STORE_NAME}
+  procedural: true
+  user_profile: true
+  chat_summary: true
+  scope: user

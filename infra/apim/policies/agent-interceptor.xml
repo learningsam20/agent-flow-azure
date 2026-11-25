@@ -1,0 +1,165 @@
+<!--
+  AI Gateway: Keycloak JWT + Agent ACL → Foundry project Responses API (real agents).
+  Tools/MCP/skills execute inside Foundry — this policy does not simulate chat/completions.
+-->
+<policies>
+  <inbound>
+    <base />
+    <set-variable name="correlationId" value="@(context.Request.Headers.GetValueOrDefault("X-Correlation-Id", Guid.NewGuid().ToString()))" />
+    <set-header name="X-Correlation-Id" exists-action="override">
+      <value>@((string)context.Variables["correlationId"])</value>
+    </set-header>
+
+    <validate-jwt header-name="Authorization" failed-validation-httpcode="401" failed-validation-error-message="Unauthorized" require-expiration-time="true" require-scheme="Bearer" clock-skew="60" output-token-variable-name="jwt">
+      <openid-config url="{{keycloak-openid-config}}" />
+      <audiences>
+        <audience>{{keycloak-api-audience}}</audience>
+      </audiences>
+      <required-claims>
+        <claim name="roles" match="any">
+          <value>App.Admin</value>
+          <value>App.User</value>
+        </claim>
+      </required-claims>
+    </validate-jwt>
+
+    <set-variable name="userOid" value="@(((Jwt)context.Variables["jwt"]).Subject)" />
+    <set-variable name="userRoles" value="@{
+      var jwt = (Jwt)context.Variables["jwt"];
+      var roles = jwt.Claims.GetValueOrDefault("roles", new string[0]);
+      var headerRoles = context.Request.Headers.GetValueOrDefault("X-User-Roles", "");
+      if (!string.IsNullOrEmpty(headerRoles)) { return headerRoles; }
+      return String.Join(",", roles ?? new string[0]);
+    }" />
+    <set-variable name="agentId" value="@(context.Request.MatchedParameters.GetValueOrDefault("agentId", ""))" />
+
+    <choose>
+      <when condition="@{
+        var agent = (string)context.Variables.GetValueOrDefault("agentId", "");
+        if (string.IsNullOrEmpty(agent)) { return false; }
+        var roles = ((string)context.Variables["userRoles"]).Split(new[]{','}, StringSplitOptions.RemoveEmptyEntries);
+        if (Array.Exists(roles, r => r == "App.Admin" || r == "Agent.Admin")) { return false; }
+        if (Array.Exists(roles, r => r == "Agent.Viewer") && (agent == "finops-analyst-agent" || agent == "repo-ops-agent" || agent == "sec-audit-agent")) {
+          return true;
+        }
+        if (Array.Exists(roles, r => r == "Agent.Developer") && (agent == "finops-analyst-agent" || agent == "sec-audit-agent")) {
+          return true;
+        }
+        if (Array.Exists(roles, r => r == "Agent.SecurityAuditor") && (agent == "finops-analyst-agent" || agent == "repo-ops-agent")) {
+          return true;
+        }
+        if (!Array.Exists(roles, r => r.StartsWith("Agent."))) { return true; }
+        return false;
+      }">
+        <return-response>
+          <set-status code="403" reason="Forbidden" />
+          <set-header name="Content-Type" exists-action="override">
+            <value>application/json</value>
+          </set-header>
+          <set-body>@{
+            return new JObject(
+              new JProperty("error", "Policy Violation: Role lacks permission"),
+              new JProperty("agent", context.Variables["agentId"]),
+              new JProperty("roles", context.Variables["userRoles"]),
+              new JProperty("correlationId", context.Variables["correlationId"])
+            ).ToString();
+          }</set-body>
+        </return-response>
+      </when>
+    </choose>
+
+    <set-header name="X-User-Id" exists-action="override">
+      <value>@((string)context.Variables["userOid"])</value>
+    </set-header>
+    <set-header name="X-User-Roles" exists-action="override">
+      <value>@((string)context.Variables["userRoles"])</value>
+    </set-header>
+
+    <choose>
+      <when condition="@(context.Request.MatchedParameters.ContainsKey("agentId"))">
+        <set-backend-service backend-id="foundry-backend" />
+        <!-- Foundry project OpenAI-compatible Responses API with agent_reference -->
+        <rewrite-uri template="/openai/v1/responses?api-version=v1" copy-unmatched-params="false" />
+        <set-method>POST</set-method>
+        <set-header name="Content-Type" exists-action="override">
+          <value>application/json</value>
+        </set-header>
+        <set-body>@{
+          var body = context.Request.Body.As<JObject>(preserveContent: true) ?? new JObject();
+          var message = (string)(body["message"] ?? "");
+          var agentId = context.Request.MatchedParameters.GetValueOrDefault("agentId", "triage-router-agent");
+          var agentRef = new JObject(
+            new JProperty("name", agentId),
+            new JProperty("type", "agent_reference")
+          );
+          return new JObject(
+            new JProperty("input", message),
+            new JProperty("agent_reference", agentRef),
+            new JProperty("metadata", new JObject(
+              new JProperty("correlationId", (string)context.Variables["correlationId"]),
+              new JProperty("userOid", (string)context.Variables["userOid"]),
+              new JProperty("roles", (string)context.Variables["userRoles"])
+            ))
+          ).ToString();
+        }</set-body>
+        <authentication-managed-identity resource="https://cognitiveservices.azure.com/" />
+      </when>
+      <when condition="@(context.Request.Url.Path.Contains("/flows/"))">
+        <set-backend-service backend-id="functions-backend" />
+      </when>
+    </choose>
+  </inbound>
+  <backend>
+    <base />
+  </backend>
+  <outbound>
+    <base />
+    <set-header name="X-Correlation-Id" exists-action="override">
+      <value>@((string)context.Variables["correlationId"])</value>
+    </set-header>
+    <choose>
+      <when condition="@(context.Request.MatchedParameters.ContainsKey("agentId") && context.Response.StatusCode == 200)">
+        <set-body>@{
+          var raw = context.Response.Body.As<JObject>(preserveContent: true) ?? new JObject();
+          var agentId = context.Request.MatchedParameters.GetValueOrDefault("agentId", "");
+          var content = (string)(raw["output_text"] ?? "");
+          if (string.IsNullOrEmpty(content)) {
+            // Fall back to first message output_text parts
+            var output = raw["output"] as JArray;
+            if (output != null) {
+              var sb = new System.Text.StringBuilder();
+              foreach (var item in output) {
+                var blocks = item["content"] as JArray;
+                if (blocks == null) { continue; }
+                foreach (var block in blocks) {
+                  var t = (string)(block["text"] ?? "");
+                  if (!string.IsNullOrEmpty(t)) { sb.Append(t); }
+                }
+              }
+              content = sb.ToString();
+            }
+          }
+          if (string.IsNullOrEmpty(content)) {
+            content = "Foundry agent returned no visible text.";
+          }
+          return new JObject(
+            new JProperty("agent", agentId),
+            new JProperty("harness", "microsoft_copilot_preview"),
+            new JProperty("reply", content),
+            new JProperty("output_markdown", content),
+            new JProperty("correlationId", context.Variables["correlationId"]),
+            new JProperty("model", raw["model"]),
+            new JProperty("usage", raw["usage"]),
+            new JProperty("trace", new JArray(
+              new JObject(new JProperty("step", "apim_gateway"), new JProperty("status", "ok")),
+              new JObject(new JProperty("step", "foundry_project"), new JProperty("status", "ok"), new JProperty("agent", agentId))
+            ))
+          ).ToString();
+        }</set-body>
+      </when>
+    </choose>
+  </outbound>
+  <on-error>
+    <base />
+  </on-error>
+</policies>

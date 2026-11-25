@@ -1,0 +1,6 @@
+mcp[cli]>=1.2.0
+azure-identity>=1.19.0
+azure-cosmos>=4.7.0
+azure-keyvault-secrets>=4.9.0
+starlette>=0.38.0
+uvicorn>=0.30.0

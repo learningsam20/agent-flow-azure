@@ -1,0 +1,37 @@
+{
+  "flows": [
+    {
+      "id": "multi-agent-flow",
+      "name": "Multi-agent review (parallel + HITL)",
+      "description": "Triage → Path A runs repo-ops + sec-audit in parallel (or Path B FinOps) → HITL approve / reject / re-route → synthesize. Demonstrates parallel execution, tools on each agent node, and reviewer RBAC.",
+      "demoPrompt": "Review our AKS + Terraform stack for security issues and open PRs in contoso/agent-flow-azure. Check package requests for CVEs.",
+      "features": ["parallel", "hitl", "reroute", "tools", "pathA_pathB"],
+      "defaultPath": "A",
+      "hitlReviewerRoles": ["App.Admin", "Agent.Admin", "Agent.SecurityAuditor"],
+      "workflowPath": "workflows/logic-app-standard/multi-agent-flow/workflow.json",
+      "logicAppName": "afa-dev-logic-eus2-01"
+    },
+    {
+      "id": "security-incident-flow",
+      "name": "Security incident (parallel findings + HITL)",
+      "description": "Triage → parallel sec-audit (cve-lookup tool) + repo-ops (repo-metrics tool) → join → security HITL → remediation brief. Best demo for tool chips on nodes and SecurityAuditor HITL.",
+      "demoPrompt": "Security incident: possible CVE in package urllib3 version 1.26.5 affecting contoso/platform-api. Assess severity and draft remediation.",
+      "features": ["parallel", "hitl", "tools", "cve-lookup", "repo-metrics"],
+      "defaultPath": "A",
+      "hitlReviewerRoles": ["App.Admin", "Agent.Admin", "Agent.SecurityAuditor"],
+      "workflowPath": "workflows/logic-app-standard/security-incident-flow/workflow.json",
+      "logicAppName": "afa-dev-logic-sec-eus2-01"
+    },
+    {
+      "id": "finops-approval-flow",
+      "name": "FinOps spend approval (HITL budget)",
+      "description": "Triage → FinOps analyst with cost-estimator tool → HITL budget approve/reject with notes → executive synthesize. Demonstrates Admin-only agent + structured HITL input.",
+      "demoPrompt": "Estimate monthly cost for APIM Consumption, Functions Y1, Cosmos serverless, Key Vault, and Foundry tokens for our agent platform. Cap recommendation at $50/mo.",
+      "features": ["hitl", "tools", "cost-estimator", "budgetCap"],
+      "defaultPath": "B",
+      "hitlReviewerRoles": ["App.Admin", "Agent.Admin"],
+      "workflowPath": "workflows/logic-app-standard/finops-approval-flow/workflow.json",
+      "logicAppName": "afa-dev-logic-fin-eus2-01"
+    }
+  ]
+}

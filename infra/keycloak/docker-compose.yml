@@ -1,0 +1,28 @@
+# Keycloak for agent-flow-azure — HTTP on 5750 (near app ports 5748/5749)
+services:
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    container_name: afa-keycloak
+    command:
+      - start-dev
+      - --http-port=8080
+      - --hostname-strict=false
+      - --import-realm
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN:-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+      KEYCLOAK_IMPORT: /opt/keycloak/data/import/realm-agent-flow.json
+    ports:
+      - "5750:8080"
+    volumes:
+      - ./realm-agent-flow.json:/opt/keycloak/data/import/realm-agent-flow.json:ro
+      - keycloak_data:/opt/keycloak/data
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/8080"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
+
+volumes:
+  keycloak_data:

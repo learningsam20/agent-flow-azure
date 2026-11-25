@@ -1,0 +1,51 @@
+{
+  "kind": "prompt",
+  "name": "exec-synthesizer-agent",
+  "display_name": "Executive Synthesizer Agent",
+  "description": "Compiles parallel branch outputs into executive briefs.",
+  "host": "azure.ai.agent",
+  "harness": {
+    "type": "microsoft_copilot_preview"
+  },
+  "model": {
+    "deployment": "gpt-5-mini"
+  },
+  "instructions": "You are the exec-synthesizer-agent. Follow research-brief SKILL.md.\nPull node states from audit-store MCP. Filter output by X-User-Roles.\nUse Code Interpreter for charts when helpful. Persist artifacts with MI to Blob Storage.\n",
+  "skills": [
+    {
+      "name": "research-brief",
+      "version": "1.0.0"
+    }
+  ],
+  "tools": [
+    {
+      "type": "toolbox",
+      "name": "afa-shared-toolbox",
+      "discovery": "tool_search"
+    },
+    {
+      "type": "code_interpreter"
+    },
+    {
+      "type": "mcp",
+      "name": "mcp-afa-audit-store",
+      "resolve_from": "api_center",
+      "gateway_required": true
+    }
+  ],
+  "guardrails": {
+    "content_safety": true,
+    "prompt_shields": true
+  },
+  "rbac": {
+    "allowed_roles": [
+      "Agent.Admin",
+      "Agent.Developer",
+      "Agent.SecurityAuditor",
+      "Agent.Viewer"
+    ]
+  },
+  "metadata": {
+    "project": "agent-flow-azure"
+  }
+}

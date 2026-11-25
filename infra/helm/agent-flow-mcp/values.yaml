@@ -1,0 +1,43 @@
+replicaCount: 1
+
+image:
+  repository: ghcr.io/agent-flow-azure/mcp-afa-audit-store
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 8080
+
+workloadIdentity:
+  enabled: true
+  # Azure AD application / UAMI client ID for federated credential
+  clientId: ""
+  # Service account annotation for azure.workload.identity/client-id
+  serviceAccount:
+    create: true
+    name: afa-mcp-sa
+    annotations: {}
+
+identity:
+  clientId: ""
+
+keyVault:
+  uri: ""
+
+cosmos:
+  endpoint: ""
+
+storage:
+  accountName: ""
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+# No secret env vars — DefaultAzureCredential + Key Vault references only
+env: []

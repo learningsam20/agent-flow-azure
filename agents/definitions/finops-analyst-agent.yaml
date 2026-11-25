@@ -1,0 +1,41 @@
+kind: prompt
+name: finops-analyst-agent
+display_name: FinOps Analyst Agent
+description: Analyzes Azure SKU costs, tags, and optimization opportunities.
+host: azure.ai.agent
+harness:
+  type: microsoft_copilot_preview
+model:
+  deployment: ${FOUNDRY_MODEL_NAME}
+instructions: |
+  You are the finops-analyst-agent (Admin only). Follow azure-finops-advisor SKILL.md.
+  Prefer Free/Consumption tiers. Discover cost-estimator via API Center.
+skills:
+  - name: azure-finops-advisor
+    version: "1.0.0"
+tools:
+  - type: toolbox
+    name: afa-shared-toolbox
+    discovery: tool_search
+  - type: openapi
+    name: cost-estimator
+    resolve_from: api_center
+  - type: mcp
+    name: mcp-afa-audit-store
+    resolve_from: api_center
+    gateway_required: true
+guardrails:
+  content_safety: true
+  prompt_shields: true
+rbac:
+  allowed_roles:
+    - Agent.Admin
+metadata:
+  project: agent-flow-azure
+
+memory:
+  store: ${MEMORY_STORE_NAME}
+  procedural: true
+  user_profile: true
+  chat_summary: true
+  scope: user

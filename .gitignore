@@ -1,0 +1,74 @@
+# Environment & secrets — never commit
+.env
+.env.local
+.env.*.local
+.env.generated
+.env.azure.outputs
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+.venv/
+venv/
+env/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Node / frontend
+node_modules/
+dist/
+build/
+.vite/
+*.tsbuildinfo
+webapp/frontend/coverage/
+
+# Terraform
+infra/terraform/.terraform/
+infra/terraform/*.tfstate
+infra/terraform/*.tfstate.*
+infra/terraform/*.tfvars
+!infra/terraform/terraform.tfvars.example
+infra/terraform/crash.log
+infra/terraform/override.tf
+.terraform.lock.hcl
+
+# Azure Functions
+tools/azure-functions/local.settings.json
+tools/azure-functions/.python_packages/
+
+# Helm
+*.tgz
+charts/
+
+# IDE / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs & runtime
+*.log
+logs/
+.pids/
+pids/
+webapp/backend/.pids/
+.cache/
+.data/
+.deepeval/
+*.webm
+
+# Local JWT / persona artifacts
+.dev-tokens/
+*.pem
+*.key
+!infra/**/*.xml
+
+# Demo screenshots and video are intentionally committed
+!media/
+!media/**

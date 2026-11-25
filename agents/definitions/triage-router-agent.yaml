@@ -1,0 +1,46 @@
+# Declarative Foundry Prompt Agent — Copilot Harness (zero custom agent code)
+kind: prompt
+name: triage-router-agent
+display_name: Triage Router Agent
+description: Classifies intent, checks policy compliance, and routes tasks.
+host: azure.ai.agent
+harness:
+  type: microsoft_copilot_preview
+model:
+  deployment: ${FOUNDRY_MODEL_NAME}
+instructions: |
+  You are the triage-router-agent for agent-flow-azure.
+  Follow the intent-classifier SKILL.md progressive disclosure.
+  Discover tools and MCP endpoints dynamically via Foundry Toolbox / Azure API Center.
+  Never hardcode URLs. Respect X-User-Roles for routing decisions.
+  Emit structured JSON triage decisions for the Logic Apps orchestrator.
+skills:
+  - name: intent-classifier
+    version: "1.0.0"
+tools:
+  - type: toolbox
+    name: afa-shared-toolbox
+    discovery: tool_search
+  - type: openapi
+    name: validate-request
+    resolve_from: api_center
+    api_name: fn-afa-validate-request
+guardrails:
+  content_safety: true
+  prompt_shields: true
+rbac:
+  allowed_roles:
+    - Agent.Admin
+    - Agent.Developer
+    - Agent.SecurityAuditor
+    - Agent.Viewer
+metadata:
+  project: agent-flow-azure
+  managed_by: terraform
+
+memory:
+  store: ${MEMORY_STORE_NAME}
+  procedural: true
+  user_profile: true
+  chat_summary: true
+  scope: user

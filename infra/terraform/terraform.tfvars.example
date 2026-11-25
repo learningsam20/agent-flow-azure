@@ -1,0 +1,12 @@
+subscription_id        = "00000000-0000-0000-0000-000000000000"
+tenant_id              = "00000000-0000-0000-0000-000000000000"
+environment            = "dev"
+location               = "eastus2"
+location_short         = "eus2"
+project_short          = "afa"
+name_suffix            = "01"
+foundry_model_name     = "gpt-4o-mini"
+foundry_model_version  = "2024-07-18"
+enable_content_safety  = true
+enable_prompt_shields  = true
+web_redirect_uri       = "http://localhost:5748/"

@@ -1,0 +1,35 @@
+# Requirements
+
+- Need to build a cloud native agentic workflow.
+- Supported clouds - Azure
+- Use all the cloud native stack
+- The agents must be built with the help of skills, harness, MCPs
+- The deployment must be on Microsoft foundry
+- All the config must be driven by .env
+- The creation, tear down of resources and app deployment must happen through teraform and helm
+- For secrets, it must use azure key vault
+- The authenticaiton and authorization must happen using iam, azure native entra iod, identities
+- Ensure that some agents, skills, MCP tools, tools are accessible only to specific users
+- Build a sample web app that runs locally and is able to login with different users with different roles and permissions
+- The agent, skill permissions are managed through interceptor as well as policy changes.
+- The e2e scenario must depict chat for direct agent or flow execution
+- Based on the logged in user, it should allow/ disallow specific execution
+- It should render the output of agent or flow execution agents in the app
+- It must support human in the loop node as well as visually depict different flow stages and show corresponding status and output
+- It should allow restartability from a particular node of the flow if it fails
+- It must allow pause, cancelling of flow
+- It should show a history of user specific flow/agent executions and on click, corresponding details
+- proposed to use foundry gateway, registry, logic app baserd workflow, tools through azure functions, mcp as functions or acs
+- agents must use discovery from regstry to identify actual skill, tool, mcp tool details
+- ensure appropiate guardrails, policies are enabled for all the agents, including RBAC
+
+- use few of the open source harness/skills for building skill based ahents using foundry toolbox, skills
+- use some tools deployed as azure functions and made available to agents through foundry gateway and registry
+- use some public / custom MCP servers that the agents can connect to. e.g. github, etc.
+- build a workflow depicting parallel, sequential, conditional execution of various agents and tools
+- for this experiement, do not use code based agents but define agents only through skills, tools, mcps
+- use the free version of all resources where possible
+- use a naming convention and a tag to suit agent-flow-azure
+- have a thorough start, install, decomssoin, provision, stop scripts
+- update deployment diagram, security architecture, data flow diagram
+- update bill of material with the purpose =and any specifics

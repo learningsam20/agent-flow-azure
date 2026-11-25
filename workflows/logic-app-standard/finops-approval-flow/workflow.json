@@ -1,0 +1,190 @@
+{
+  "definition": {
+    "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+      "APIM_GATEWAY_URL": {
+        "type": "String",
+        "defaultValue": ""
+      }
+    },
+    "triggers": {
+      "manual": {
+        "type": "Request",
+        "kind": "Http",
+        "inputs": {
+          "schema": {
+            "type": "object",
+            "properties": {
+              "runId": { "type": "string" },
+              "userOid": { "type": "string" },
+              "roles": { "type": "string" },
+              "message": { "type": "string" },
+              "correlationId": { "type": "string" },
+              "hitlNotifyUrl": { "type": "string" },
+              "hitlReviewerOids": {
+                "type": "array",
+                "items": { "type": "string" }
+              },
+              "hitlReviewerRoles": {
+                "type": "array",
+                "items": { "type": "string" }
+              }
+            },
+            "required": ["message", "userOid"]
+          }
+        }
+      }
+    },
+    "actions": {
+      "Init_State": {
+        "type": "InitializeVariable",
+        "inputs": {
+          "variables": [
+            {
+              "name": "runId",
+              "type": "string",
+              "value": "@{coalesce(triggerBody()?['runId'], guid())}"
+            },
+            {
+              "name": "budgetApproved",
+              "type": "boolean",
+              "value": false
+            }
+          ]
+        },
+        "runAfter": {}
+      },
+      "Node1_Triage": {
+        "type": "Http",
+        "inputs": {
+          "method": "POST",
+          "uri": "@{parameters('APIM_GATEWAY_URL')}/api/agents/triage-router-agent/chat",
+          "headers": {
+            "Authorization": "@{triggerOutputs()['headers']?['Authorization']}",
+            "X-User-Id": "@{triggerBody()?['userOid']}",
+            "X-User-Roles": "@{triggerBody()?['roles']}",
+            "X-Correlation-Id": "@{coalesce(triggerBody()?['correlationId'], guid())}",
+            "Content-Type": "application/json"
+          },
+          "body": {
+            "message": "@{triggerBody()?['message']}",
+            "runId": "@{variables('runId')}",
+            "nodeId": "Node1_Triage",
+            "forcePath": "B"
+          },
+          "authentication": { "type": "ManagedServiceIdentity" }
+        },
+        "runAfter": { "Init_State": ["Succeeded"] }
+      },
+      "Node_FinOps_Estimate": {
+        "type": "Http",
+        "inputs": {
+          "method": "POST",
+          "uri": "@{parameters('APIM_GATEWAY_URL')}/api/agents/finops-analyst-agent/chat",
+          "headers": {
+            "Authorization": "@{triggerOutputs()['headers']?['Authorization']}",
+            "X-User-Id": "@{triggerBody()?['userOid']}",
+            "X-User-Roles": "@{triggerBody()?['roles']}",
+            "Content-Type": "application/json"
+          },
+          "body": {
+            "message": "@{triggerBody()?['message']}",
+            "runId": "@{variables('runId')}",
+            "nodeId": "Node_FinOps_Estimate",
+            "toolsRequired": ["cost-estimator"]
+          },
+          "authentication": { "type": "ManagedServiceIdentity" }
+        },
+        "runAfter": { "Node1_Triage": ["Succeeded"] }
+      },
+      "Wait_For_HITL_Callback": {
+        "type": "HttpWebhook",
+        "inputs": {
+          "subscribe": {
+            "method": "POST",
+            "uri": "@{coalesce(triggerBody()?['hitlNotifyUrl'], concat(parameters('APIM_GATEWAY_URL'), '/api/flows/', variables('runId'), '/hitl-ready'))}",
+            "headers": { "Content-Type": "application/json" },
+            "body": {
+              "runId": "@variables('runId')",
+              "status": "Waiting_HITL",
+              "nodeId": "Wait_For_HITL_Callback",
+              "message": "Approve or reject FinOps spend recommendation",
+              "callbackUrl": "@listCallbackUrl()",
+              "hitlReviewerOids": "@triggerBody()?['hitlReviewerOids']",
+              "hitlReviewerRoles": "@coalesce(triggerBody()?['hitlReviewerRoles'], createArray('App.Admin','Agent.Admin'))",
+              "requiredInput": ["decision", "notes", "budgetCap"]
+            }
+          },
+          "unsubscribe": {
+            "method": "POST",
+            "uri": "@{coalesce(triggerBody()?['hitlNotifyUrl'], concat(parameters('APIM_GATEWAY_URL'), '/api/flows/', variables('runId'), '/hitl-unsubscribe'))}",
+            "body": { "runId": "@variables('runId')" }
+          }
+        },
+        "runAfter": { "Node_FinOps_Estimate": ["Succeeded"] }
+      },
+      "HITL_Decision": {
+        "type": "If",
+        "expression": {
+          "and": [{ "equals": ["@body('Wait_For_HITL_Callback')?['decision']", "approve"] }]
+        },
+        "actions": {
+          "Node5_Synthesize": {
+            "type": "Http",
+            "inputs": {
+              "method": "POST",
+              "uri": "@{parameters('APIM_GATEWAY_URL')}/api/agents/exec-synthesizer-agent/chat",
+              "headers": {
+                "Authorization": "@{triggerOutputs()['headers']?['Authorization']}",
+                "X-User-Id": "@{triggerBody()?['userOid']}",
+                "X-User-Roles": "@{triggerBody()?['roles']}",
+                "Content-Type": "application/json"
+              },
+              "body": {
+                "message": "@{triggerBody()?['message']}",
+                "hitlNotes": "@{body('Wait_For_HITL_Callback')?['notes']}",
+                "budgetCap": "@{body('Wait_For_HITL_Callback')?['input']?['budgetCap']}",
+                "finops": "@body('Node_FinOps_Estimate')"
+              },
+              "authentication": { "type": "ManagedServiceIdentity" }
+            }
+          },
+          "Final_Approved": {
+            "type": "Response",
+            "kind": "Http",
+            "inputs": {
+              "statusCode": 200,
+              "body": {
+                "runId": "@variables('runId')",
+                "status": "Succeeded",
+                "branch": "approve",
+                "output": "@body('Node5_Synthesize')"
+              }
+            },
+            "runAfter": { "Node5_Synthesize": ["Succeeded"] }
+          }
+        },
+        "else": {
+          "actions": {
+            "Final_Rejected": {
+              "type": "Response",
+              "kind": "Http",
+              "inputs": {
+                "statusCode": 200,
+                "body": {
+                  "runId": "@variables('runId')",
+                  "status": "Cancelled",
+                  "branch": "reject",
+                  "reason": "@{body('Wait_For_HITL_Callback')?['notes']}"
+                }
+              }
+            }
+          }
+        },
+        "runAfter": { "Wait_For_HITL_Callback": ["Succeeded"] }
+      }
+    },
+    "outputs": {}
+  }
+}

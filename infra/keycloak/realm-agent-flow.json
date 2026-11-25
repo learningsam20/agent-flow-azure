@@ -1,0 +1,200 @@
+{
+  "realm": "agent-flow",
+  "enabled": true,
+  "displayName": "agent-flow-azure",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "editUsernameAllowed": false,
+  "sslRequired": "external",
+  "accessTokenLifespan": 28800,
+  "accessTokenLifespanForImplicitFlow": 28800,
+  "ssoSessionIdleTimeout": 86400,
+  "ssoSessionMaxLifespan": 604800,
+  "clientSessionIdleTimeout": 86400,
+  "clientSessionMaxLifespan": 604800,
+  "offlineSessionIdleTimeout": 2592000,
+  "refreshTokenMaxReuse": 0,
+  "roles": {
+    "realm": [
+      { "name": "App.Admin", "description": "Platform administrator" },
+      { "name": "App.User", "description": "Standard application user" },
+      { "name": "Agent.Admin", "description": "Full agent ACL" },
+      { "name": "Agent.Developer", "description": "Developer agent ACL" },
+      { "name": "Agent.SecurityAuditor", "description": "Security auditor agent ACL" },
+      { "name": "Agent.Viewer", "description": "Viewer agent ACL" }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "afa-web",
+      "name": "agent-flow-azure SPA",
+      "enabled": true,
+      "publicClient": true,
+      "directAccessGrantsEnabled": true,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "protocol": "openid-connect",
+      "rootUrl": "http://localhost:5748",
+      "baseUrl": "http://localhost:5748/",
+      "redirectUris": [
+        "http://localhost:5748/*",
+        "http://127.0.0.1:5748/*"
+      ],
+      "webOrigins": [
+        "http://localhost:5748",
+        "http://127.0.0.1:5748",
+        "+"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "access.token.lifespan": "28800",
+        "client.session.idle.timeout": "86400",
+        "client.session.max.lifespan": "604800",
+        "oauth2.device.authorization.grant.enabled": "false"
+      },
+      "fullScopeAllowed": true,
+      "defaultClientScopes": ["web-origins", "acr", "profile", "roles", "email", "afa-audience"],
+      "optionalClientScopes": ["address", "phone", "offline_access"],
+      "protocolMappers": [
+        {
+          "name": "aud-afa-api",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "afa-api",
+            "id.token.claim": "false",
+            "access.token.claim": "true"
+          }
+        },
+        {
+          "name": "realm-roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "multivalued": "true",
+            "user.attribute": "foo",
+            "claim.name": "roles",
+            "jsonType.label": "String",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        },
+        {
+          "name": "username",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-property-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.attribute": "username",
+            "claim.name": "preferred_username",
+            "jsonType.label": "String",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        },
+        {
+          "name": "email",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-property-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.attribute": "email",
+            "claim.name": "email",
+            "jsonType.label": "String",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "afa-api",
+      "name": "agent-flow-azure API audience",
+      "enabled": true,
+      "publicClient": false,
+      "secret": "afa-api-local-not-for-prod-rotate",
+      "serviceAccountsEnabled": false,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "protocol": "openid-connect",
+      "fullScopeAllowed": true
+    },
+    {
+      "clientId": "afa-bootstrap",
+      "name": "Bootstrap admin CLI",
+      "enabled": true,
+      "publicClient": false,
+      "secret": "afa-bootstrap-local-rotate",
+      "serviceAccountsEnabled": true,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "protocol": "openid-connect",
+      "fullScopeAllowed": true
+    }
+  ],
+  "clientScopes": [
+    {
+      "name": "afa-audience",
+      "protocol": "openid-connect",
+      "attributes": { "include.in.token.scope": "true" },
+      "protocolMappers": [
+        {
+          "name": "aud-afa-api",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "afa-api",
+            "id.token.claim": "false",
+            "access.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ],
+  "users": [
+    {
+      "username": "admin",
+      "email": "admin@agent-flow.local",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Platform",
+      "lastName": "Admin",
+      "credentials": [
+        { "type": "password", "value": "ChangeMeAdmin1!", "temporary": false }
+      ],
+      "realmRoles": ["App.Admin", "App.User", "Agent.Admin"]
+    },
+    {
+      "username": "developer",
+      "email": "developer@agent-flow.local",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Dev",
+      "lastName": "User",
+      "credentials": [
+        { "type": "password", "value": "ChangeMeUser1!", "temporary": false }
+      ],
+      "realmRoles": ["App.User", "Agent.Developer"]
+    },
+    {
+      "username": "auditor",
+      "email": "auditor@agent-flow.local",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Sec",
+      "lastName": "Auditor",
+      "credentials": [
+        { "type": "password", "value": "ChangeMeUser2!", "temporary": false }
+      ],
+      "realmRoles": ["App.User", "Agent.SecurityAuditor"]
+    }
+  ]
+}

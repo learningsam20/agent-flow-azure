@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "agent-flow-mcp.fullname" . }}
+  labels:
+    {{- include "agent-flow-mcp.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "agent-flow-mcp.name" . }}
+  template:
+    metadata:
+      labels:
+        {{- include "agent-flow-mcp.labels" . | nindent 8 }}
+        azure.workload.identity/use: "true"
+    spec:
+      serviceAccountName: {{ .Values.workloadIdentity.serviceAccount.name }}
+      containers:
+        - name: mcp
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+          env:
+            - name: AZURE_CLIENT_ID
+              value: {{ .Values.identity.clientId | default .Values.workloadIdentity.clientId | quote }}
+            - name: KEY_VAULT_URI
+              value: {{ .Values.keyVault.uri | quote }}
+            - name: COSMOS_ENDPOINT
+              value: {{ .Values.cosmos.endpoint | quote }}
+            - name: STORAGE_ACCOUNT_NAME
+              value: {{ .Values.storage.accountName | quote }}
+            - name: PORT
+              value: {{ .Values.service.port | quote }}
+            {{- range .Values.env }}
+            - name: {{ .name }}
+              value: {{ .value | quote }}
+            {{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 20
